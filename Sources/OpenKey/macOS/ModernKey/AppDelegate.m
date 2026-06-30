@@ -93,7 +93,7 @@ extern bool convertToolDontAlertWhenCompleted;
 
 -(void)askPermission {
     NSAlert *alert = [[NSAlert alloc] init];
-    [alert setMessageText: [NSString stringWithFormat:@"OpenKey cần bạn cấp quyền để có thể hoạt động!"]];
+    [alert setMessageText: [NSString stringWithFormat:@"OpenKeyFix cần bạn cấp quyền để có thể hoạt động!"]];
     [alert setInformativeText:@"Vui lòng chạy lại ứng dụng sau khi cấp quyền."];
 
     [alert addButtonWithTitle:@"Không"];

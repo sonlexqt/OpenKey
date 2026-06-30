@@ -107,7 +107,7 @@ extern int vPerformLayoutCompat;
 
 - (void)viewDidAppear {
     [super viewDidAppear];
-    NSString* str = @"OpenKey %@ - Bộ gõ Tiếng Việt";
+    NSString* str = @"OpenKeyFix %@ - Bộ gõ Tiếng Việt";
     self.view.window.title = [NSString stringWithFormat:str, [[NSBundle mainBundle] objectForInfoDictionaryKey: @"CFBundleShortVersionString"]];
 }
 

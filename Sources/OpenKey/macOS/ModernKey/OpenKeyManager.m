@@ -210,8 +210,8 @@ static NSTimer*           watchdogTimer;
 
 +(void)showUpdateMessage:(NSWindow*)parent needUpdating:(BOOL)needUpdating newVersion:(NSString*)versionString {
     NSAlert *alert = [[NSAlert alloc] init];
-    [alert setMessageText:(needUpdating ? [NSString stringWithFormat:@"OpenKey Có phiên bản mới (%@), bạn có muốn cập nhật không?", versionString] : @"Bạn đang dùng phiên bản mới nhất!")];
-    [alert setInformativeText:(needUpdating ? @"Bấm 'Có' để cập nhật OpenKey." : @"")];
+    [alert setMessageText:(needUpdating ? [NSString stringWithFormat:@"OpenKeyFix Có phiên bản mới (%@), bạn có muốn cập nhật không?", versionString] : @"Bạn đang dùng phiên bản mới nhất!")];
+    [alert setInformativeText:(needUpdating ? @"Bấm 'Có' để cập nhật OpenKeyFix." : @"")];
     
     if (!needUpdating) {
         [alert addButtonWithTitle:@"OK"];
