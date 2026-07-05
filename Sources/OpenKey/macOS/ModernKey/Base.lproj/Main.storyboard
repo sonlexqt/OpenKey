@@ -921,6 +921,18 @@
                                     <action selector="onBeepSound:" target="XfG-lQ-9wD" id="t57-pm-xPS"/>
                                 </connections>
                             </button>
+                            <popUpButton toolTip="Âm thanh phát khi chuyển chế độ gõ" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="Snd-b1-po0">
+                                <rect key="frame" x="423" y="1046" width="112" height="25"/>
+                                <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
+                                <popUpButtonCell key="cell" type="push" title="" bezelStyle="rounded" alignment="left" lineBreakMode="truncatingTail" state="on" borderStyle="borderAndBezel" imageScaling="proportionallyDown" inset="2" id="Snd-b1-ce0">
+                                    <behavior key="behavior" lightByBackground="YES" lightByGray="YES"/>
+                                    <font key="font" metaFont="menu"/>
+                                    <menu key="menu" id="Snd-b1-mn0"/>
+                                </popUpButtonCell>
+                                <connections>
+                                    <action selector="onBeepSoundChanged:" target="XfG-lQ-9wD" id="Snd-b1-ac0"/>
+                                </connections>
+                            </popUpButton>
                             <button toolTip="Phím Control" verticalHuggingPriority="750" fixedFrame="YES" translatesAutoresizingMaskIntoConstraints="NO" id="5e5-3S-Gd8">
                                 <rect key="frame" x="130" y="1082" width="34" height="18"/>
                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMinY="YES"/>
@@ -1718,6 +1730,7 @@
                         <outlet property="VietButton" destination="qjz-9i-VOQ" id="Jpa-0e-ZDo"/>
                         <outlet property="appOK" destination="S26-ZU-sFD" id="f3J-H0-epQ"/>
                         <outlet property="permissionWarning" destination="5SM-Mt-ady" id="MSR-ei-1L6"/>
+                        <outlet property="popupBeepSound" destination="Snd-b1-po0" id="Snd-b1-ou0"/>
                         <outlet property="popupCode" destination="9pW-S5-fU9" id="xHD-cL-Ohl"/>
                         <outlet property="popupInputType" destination="pSJ-2j-2yI" id="c9v-rt-btf"/>
                         <outlet property="retryButton" destination="D1q-YJ-LXd" id="R2Z-I7-q1P"/>

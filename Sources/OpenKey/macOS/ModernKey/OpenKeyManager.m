@@ -18,7 +18,7 @@ extern CGEventRef OpenKeyCallback(CGEventTapProxy proxy,
 extern NSString* ConvertUtil(NSString* str);
 
 @interface OpenKeyManager ()
-
++(void)playSound:(NSString*)name;
 @end
 
 @implementation OpenKeyManager {
@@ -119,6 +119,59 @@ static NSTimer*           watchdogTimer;
             @"VNI Windows",
             @"Unicode tổ hợp",
             @"Vietnamese Locale CP 1258", nil];
+}
+
+#pragma mark -Switch sound feature
+
+NSString* const kSwitchSoundNameKey = @"SwitchSoundName";
+
+// Cache the resolved NSSound so switching modes never hits the disk.
+static NSSound*  cachedSwitchSound = nil;
+static NSString* cachedSwitchSoundName = nil;
+
++(NSArray<NSString*>*)getSystemSounds {
+    // Enumerate the built-in macOS sounds so the list stays correct across OS versions.
+    NSMutableArray<NSString*>* sounds = [NSMutableArray array];
+    NSString* dir = @"/System/Library/Sounds";
+    NSArray<NSString*>* files = [[NSFileManager defaultManager] contentsOfDirectoryAtPath:dir error:nil];
+    for (NSString* file in [files sortedArrayUsingSelector:@selector(caseInsensitiveCompare:)]) {
+        if ([[file.pathExtension lowercaseString] isEqualToString:@"aiff"]) {
+            [sounds addObject:file.stringByDeletingPathExtension];
+        }
+    }
+    if (sounds.count == 0) {
+        // Fallback to the classic set if the directory could not be read.
+        [sounds addObjectsFromArray:@[@"Basso", @"Blow", @"Bottle", @"Frog", @"Funk",
+                                      @"Glass", @"Hero", @"Morse", @"Ping", @"Pop",
+                                      @"Purr", @"Sosumi", @"Submarine", @"Tink"]];
+    }
+    return sounds;
+}
+
++(void)playSwitchSound {
+    NSString* name = [[NSUserDefaults standardUserDefaults] stringForKey:kSwitchSoundNameKey];
+    [self playSound:name];
+}
+
++(void)previewSound:(NSString*)soundName {
+    [self playSound:soundName];
+}
+
++(void)playSound:(NSString*)name {
+    if (name == nil || name.length == 0) {
+        NSBeep();
+        return;
+    }
+    if (![name isEqualToString:cachedSwitchSoundName]) {
+        cachedSwitchSound = [NSSound soundNamed:name];
+        cachedSwitchSoundName = name;
+    }
+    if (cachedSwitchSound) {
+        [cachedSwitchSound stop]; // restart cleanly on rapid consecutive switches
+        [cachedSwitchSound play];
+    } else {
+        NSBeep();
+    }
 }
 
 +(NSString*)getBuildDate {
