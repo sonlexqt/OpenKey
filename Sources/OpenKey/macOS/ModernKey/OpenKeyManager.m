@@ -26,9 +26,12 @@ extern NSString* ConvertUtil(NSString* str);
 }
 static BOOL _isInited = NO;
 
-static CFMachPortRef      eventTap;
+// Not static: shared with OpenKey.mm (OpenKeyCallback) so the callback can re-enable
+// the tap when macOS disables it (kCGEventTapDisabledByTimeout/ByUserInput).
+CFMachPortRef             eventTap;
 static CGEventMask        eventMask;
 static CFRunLoopSourceRef runLoopSource;
+static NSTimer*           watchdogTimer;
 
 +(BOOL)isInited {
     return _isInited;
@@ -74,11 +77,28 @@ static CFRunLoopSourceRef runLoopSource;
     // Enable the event tap.
     CGEventTapEnable(eventTap, true);
     
+    // Safety net: macOS can silently disable the tap without always notifying the callback
+    // (e.g. under memory pressure / resource contention). Periodically re-enable if needed.
+    watchdogTimer = [NSTimer scheduledTimerWithTimeInterval:5.0
+                                                     target:self
+                                                   selector:@selector(watchdogCheckEventTap:)
+                                                   userInfo:nil
+                                                    repeats:YES];
+    
     return YES;
+}
+
++(void)watchdogCheckEventTap:(NSTimer*)timer {
+    if (eventTap && !CGEventTapIsEnabled(eventTap)) {
+        CGEventTapEnable(eventTap, true);
+    }
 }
 
 +(BOOL)stopEventTap {
     if (_isInited) { //release all object
+        [watchdogTimer invalidate];
+        watchdogTimer = nil;
+        
         CFRunLoopRemoveSource(CFRunLoopGetCurrent(), runLoopSource, kCFRunLoopCommonModes);
         CFRelease(runLoopSource);
         runLoopSource = nil;
@@ -190,8 +210,8 @@ static CFRunLoopSourceRef runLoopSource;
 
 +(void)showUpdateMessage:(NSWindow*)parent needUpdating:(BOOL)needUpdating newVersion:(NSString*)versionString {
     NSAlert *alert = [[NSAlert alloc] init];
-    [alert setMessageText:(needUpdating ? [NSString stringWithFormat:@"OpenKey Có phiên bản mới (%@), bạn có muốn cập nhật không?", versionString] : @"Bạn đang dùng phiên bản mới nhất!")];
-    [alert setInformativeText:(needUpdating ? @"Bấm 'Có' để cập nhật OpenKey." : @"")];
+    [alert setMessageText:(needUpdating ? [NSString stringWithFormat:@"OpenKeyFix Có phiên bản mới (%@), bạn có muốn cập nhật không?", versionString] : @"Bạn đang dùng phiên bản mới nhất!")];
+    [alert setInformativeText:(needUpdating ? @"Bấm 'Có' để cập nhật OpenKeyFix." : @"")];
     
     if (!needUpdating) {
         [alert addButtonWithTitle:@"OK"];

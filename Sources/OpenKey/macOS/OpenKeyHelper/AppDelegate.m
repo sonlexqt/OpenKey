@@ -10,7 +10,7 @@
 #include <libproc.h>
 #include <sys/proc_info.h>
 
-#define OPENKEY_BUNDLE @"com.tuyenmai.openkey"
+#define OPENKEY_BUNDLE @"com.tuyenmai.openkey.fix"
 
 @interface AppDelegate ()
 

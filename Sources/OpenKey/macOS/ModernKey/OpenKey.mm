@@ -47,6 +47,9 @@ extern int vSendKeyStepByStep;
 extern int vFixChromiumBrowser;
 extern int vPerformLayoutCompat;
 
+// Defined in OpenKeyManager.m; used to re-enable the tap if macOS disables it.
+extern CFMachPortRef eventTap;
+
 extern "C" {
     //app which must sent special empty character
     NSArray* _niceSpaceApp = @[@"com.sublimetext.3",
@@ -599,6 +602,14 @@ extern "C" {
      * MAIN Callback.
      */
     CGEventRef OpenKeyCallback(CGEventTapProxy proxy, CGEventType type, CGEventRef event, void *refcon) {
+        //macOS can disable the tap on its own (callback timeout under load, exclusive
+        //keyboard access by another app, etc.). Re-enable it immediately so typing keeps
+        //working without needing a sleep/wake cycle.
+        if (type == kCGEventTapDisabledByTimeout || type == kCGEventTapDisabledByUserInput) {
+            CGEventTapEnable(eventTap, true);
+            return event;
+        }
+        
         //dont handle my event
         if (CGEventGetIntegerValueField(event, kCGEventSourceStateID) == CGEventSourceGetSourceStateID(myEventSource)) {
             return event;
