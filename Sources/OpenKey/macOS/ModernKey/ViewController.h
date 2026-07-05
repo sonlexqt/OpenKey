@@ -22,6 +22,7 @@
 
 @property (weak) IBOutlet NSPopUpButton *popupInputType;
 @property (weak) IBOutlet NSPopUpButton *popupCode;
+@property (weak) IBOutlet NSPopUpButton *popupBeepSound;
 
 @property (weak) IBOutlet NSBox *appOK;
 @property (weak) IBOutlet NSBox *permissionWarning;

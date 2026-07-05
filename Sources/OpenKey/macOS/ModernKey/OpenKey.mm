@@ -11,6 +11,7 @@
 #import "Engine.h"
 #import "AppDelegate.h"
 #import "ViewController.h"
+#import "OpenKeyManager.h"
 
 #define FRONT_APP [[NSWorkspace sharedWorkspace] frontmostApplication].bundleIdentifier
 #define OTHER_CONTROL_KEY (_flag & kCGEventFlagMaskCommand) || (_flag & kCGEventFlagMaskControl) || \
@@ -539,7 +540,7 @@ extern "C" {
         else
             vLanguage = 0;
         if (HAS_BEEP(vSwitchKeyStatus))
-            NSBeep();
+            [OpenKeyManager playSwitchSound];
         [appDelegate onImputMethodChanged:YES];
         startNewSession();
     }

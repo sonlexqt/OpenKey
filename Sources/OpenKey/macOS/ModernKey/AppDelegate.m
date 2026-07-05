@@ -156,7 +156,7 @@ extern bool convertToolDontAlertWhenCompleted;
         [NSApp setActivationPolicy: NSApplicationActivationPolicyRegular];
     
     if (vSwitchKeyStatus & 0x8000)
-        NSBeep();
+        [OpenKeyManager playSwitchSound];
 
     [self createStatusBarMenu];
     

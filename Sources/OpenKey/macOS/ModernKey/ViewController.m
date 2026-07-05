@@ -15,6 +15,10 @@ extern AppDelegate* appDelegate;
 extern void OnSpellCheckingChanged(void);
 
 ViewController* viewController;
+
+// First item of the sound picker: keeps the classic macOS system beep (NSBeep).
+static NSString* const kDefaultBeepTitle = @"Beep mặc định";
+
 extern int vFreeMark;
 extern int vCheckSpelling;
 extern int vUseModernOrthography;
@@ -93,6 +97,10 @@ extern int vPerformLayoutCompat;
     
     [self.popupCode removeAllItems];
     [self.popupCode addItemsWithTitles:codeData];
+    
+    [self.popupBeepSound removeAllItems];
+    [self.popupBeepSound addItemWithTitle:kDefaultBeepTitle];
+    [self.popupBeepSound addItemsWithTitles:[OpenKeyManager getSystemSounds]];
     
     [self initKey];
     
@@ -279,6 +287,14 @@ extern int vPerformLayoutCompat;
     vSwitchKeyStatus &= (~0x8000);
     vSwitchKeyStatus |= val << 15;
     [[NSUserDefaults standardUserDefaults] setInteger:vSwitchKeyStatus forKey:@"SwitchKeyStatus"];
+    [self.popupBeepSound setEnabled:val];
+}
+
+- (IBAction)onBeepSoundChanged:(NSPopUpButton *)sender {
+    // First item = system beep; store empty so playback falls back to NSBeep.
+    NSString* name = (sender.indexOfSelectedItem <= 0) ? @"" : sender.titleOfSelectedItem;
+    [[NSUserDefaults standardUserDefaults] setObject:name forKey:kSwitchSoundNameKey];
+    [OpenKeyManager previewSound:name]; // audible feedback for the chosen sound
 }
 
 - (IBAction)onSendKeyStepByStep:(id)sender {
@@ -483,8 +499,17 @@ extern int vPerformLayoutCompat;
     CustomSwitchOption.state = (vSwitchKeyStatus & 0x200) ? NSControlStateValueOn : NSControlStateValueOff;
     CustomSwitchCommand.state = (vSwitchKeyStatus & 0x400) ? NSControlStateValueOn : NSControlStateValueOff;
     CustomSwitchShift.state = (vSwitchKeyStatus & 0x800) ? NSControlStateValueOn : NSControlStateValueOff;
-    CustomBeepSound.state = (vSwitchKeyStatus & 0x8000) ? NSControlStateValueOn : NSControlStateValueOff;
+    BOOL beepOn = (vSwitchKeyStatus & 0x8000) ? YES : NO;
+    CustomBeepSound.state = beepOn ? NSControlStateValueOn : NSControlStateValueOff;
     [CustomSwitchKey setTextByChar:((vSwitchKeyStatus>>24) & 0xFF)];
+    
+    NSString* soundName = [[NSUserDefaults standardUserDefaults] stringForKey:kSwitchSoundNameKey];
+    if (soundName.length > 0 && [self.popupBeepSound itemWithTitle:soundName]) {
+        [self.popupBeepSound selectItemWithTitle:soundName];
+    } else {
+        [self.popupBeepSound selectItemAtIndex:0]; // default system beep
+    }
+    [self.popupBeepSound setEnabled:beepOn];
     
 }
 
