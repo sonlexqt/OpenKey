@@ -44,6 +44,7 @@
 		23E2E4A02314FD3A006CCC3E /* Vietnamese.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 23E2E49B2314FD3A006CCC3E /* Vietnamese.cpp */; };
 		23F512852336386200397988 /* MJAccessibilityUtils.m in Sources */ = {isa = PBXBuildFile; fileRef = 23F512832336386200397988 /* MJAccessibilityUtils.m */; };
 		A534F32629D8B78100296F25 /* Carbon.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 23874B0F220160A500000BC8 /* Carbon.framework */; };
+		AA01B00C0FFEE00DEAD00001 /* IOKit.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 23A984BE220ED07E000914A2 /* IOKit.framework */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -142,6 +143,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				A534F32629D8B78100296F25 /* Carbon.framework in Frameworks */,
+				AA01B00C0FFEE00DEAD00001 /* IOKit.framework in Frameworks */,
 				233C4A6E231F923D00DD7052 /* AppKit.framework in Frameworks */,
 				23963B5022040C720097189E /* ServiceManagement.framework in Frameworks */,
 				23851A0121F1C1A400E79A41 /* CoreGraphics.framework in Frameworks */,
@@ -323,6 +325,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 232EDA6821F1B33F0085D362 /* Build configuration list for PBXNativeTarget "OpenKey" */;
 			buildPhases = (
+				AA02B0110FFEE00DEAD00002 /* Generate BuildInfo */,
 				232EDA5021F1B33E0085D362 /* Sources */,
 				232EDA5121F1B33E0085D362 /* Frameworks */,
 				232EDA5221F1B33E0085D362 /* Resources */,
@@ -398,6 +401,24 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		AA02B0110FFEE00DEAD00002 /* Generate BuildInfo */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputPaths = (
+			);
+			name = "Generate BuildInfo";
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "sh \"${SRCROOT}/Scripts/generate_buildinfo.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		232EDA5021F1B33E0085D362 /* Sources */ = {
