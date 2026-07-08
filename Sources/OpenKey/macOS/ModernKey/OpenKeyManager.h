@@ -39,6 +39,17 @@ extern NSString* const kSwitchSoundNameKey;
 +(BOOL)quickConvert;
 
 +(void)checkNewVersion:(NSWindow*)parent callbackFunc:(CheckNewVersionCallback) callback;
+
+// Secure Input detection.
+// While macOS "Secure Event Input" is enabled, the OS blocks ALL keyboard event
+// taps, so OpenKey silently stops transforming keys (and the switch hotkey dies)
+// even though the menu-bar toggle still flips vLanguage. These let the UI detect
+// that state and tell the user which app is responsible.
++(BOOL)isSecureInputEnabled;
+
+// Localized name of the app currently holding Secure Input (e.g. "Google Chrome"),
+// or nil if Secure Input is off or the holder cannot be resolved.
++(NSString*)secureInputHolderName;
 @end
 
 #endif /* OpenKeyManager_h */

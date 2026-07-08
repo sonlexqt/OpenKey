@@ -7,6 +7,24 @@
 //
 
 #import "OpenKeyManager.h"
+#import "AppDelegate.h"
+#import <Carbon/Carbon.h>
+#import <IOKit/IOKitLib.h>
+
+// Generated on every build by Scripts/generate_buildinfo.sh (gitignored). Guarded
+// so the file still compiles if the header is missing (e.g. IDE indexing before
+// the first build); getBuildDate falls back to __DATE__ in that case.
+#if __has_include("BuildInfo.h")
+#import "BuildInfo.h"
+#endif
+
+// kIOMasterPortDefault was renamed kIOMainPortDefault (macOS 12). Fall back so
+// the code builds against older SDKs / deployment targets too.
+#ifndef kIOMainPortDefault
+#define kIOMainPortDefault kIOMasterPortDefault
+#endif
+
+extern AppDelegate* appDelegate;
 
 extern void OpenKeyInit(void);
 
@@ -92,6 +110,62 @@ static NSTimer*           watchdogTimer;
     if (eventTap && !CGEventTapIsEnabled(eventTap)) {
         CGEventTapEnable(eventTap, true);
     }
+    // Secure Input can silently block the tap without disabling it; surface it.
+    [appDelegate refreshSecureInputWarning];
+}
+
++(BOOL)isSecureInputEnabled {
+    return IsSecureEventInputEnabled() ? YES : NO;
+}
+
+// PID currently holding Secure Input, read from IOKit's console-users info.
+// Returns 0 when Secure Input is off or the owner cannot be determined.
++(pid_t)secureInputPID {
+    pid_t result = 0;
+    io_registry_entry_t root = IORegistryGetRootEntry(kIOMainPortDefault);
+    if (root == MACH_PORT_NULL)
+        return 0;
+
+    CFTypeRef prop = IORegistryEntrySearchCFProperty(root,
+                                                     kIOServicePlane,
+                                                     CFSTR("IOConsoleUsers"),
+                                                     kCFAllocatorDefault,
+                                                     kIORegistryIterateRecursively);
+    IOObjectRelease(root);
+    if (prop == NULL)
+        return 0;
+
+    if (CFGetTypeID(prop) == CFArrayGetTypeID()) {
+        CFArrayRef users = (CFArrayRef)prop;
+        for (CFIndex i = 0; i < CFArrayGetCount(users); i++) {
+            CFDictionaryRef session = (CFDictionaryRef)CFArrayGetValueAtIndex(users, i);
+            if (!session || CFGetTypeID(session) != CFDictionaryGetTypeID())
+                continue;
+            CFNumberRef pidRef = (CFNumberRef)CFDictionaryGetValue(session, CFSTR("kCGSSessionSecureInputPID"));
+            if (pidRef && CFGetTypeID(pidRef) == CFNumberGetTypeID()) {
+                int pid = 0;
+                CFNumberGetValue(pidRef, kCFNumberIntType, &pid);
+                if (pid > 0) {
+                    result = (pid_t)pid;
+                    break;
+                }
+            }
+        }
+    }
+    CFRelease(prop);
+    return result;
+}
+
++(NSString*)secureInputHolderName {
+    pid_t pid = [self secureInputPID];
+    if (pid <= 0)
+        return nil;
+    NSRunningApplication* app = [NSRunningApplication runningApplicationWithProcessIdentifier:pid];
+    if (app.localizedName.length > 0)
+        return app.localizedName;
+    if (app.bundleIdentifier.length > 0)
+        return app.bundleIdentifier;
+    return nil;
 }
 
 +(BOOL)stopEventTap {
@@ -175,7 +249,14 @@ static NSString* cachedSwitchSoundName = nil;
 }
 
 +(NSString*)getBuildDate {
+#if defined(OPENKEY_BUILD_DATE) && defined(OPENKEY_GIT_COMMIT)
+    return [NSString stringWithFormat:@"%s (%s)", OPENKEY_BUILD_DATE, OPENKEY_GIT_COMMIT];
+#elif defined(OPENKEY_BUILD_DATE)
+    return [NSString stringWithUTF8String:OPENKEY_BUILD_DATE];
+#else
+    // BuildInfo.h not generated yet; __DATE__ is the compile date of this file.
     return [NSString stringWithUTF8String:__DATE__];
+#endif
 }
 
 #pragma mark -Convert feature

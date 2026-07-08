@@ -60,7 +60,7 @@ int vFixChromiumBrowser = 0; //new on version 2.0
 extern int convertToolHotKey;
 extern bool convertToolDontAlertWhenCompleted;
 
-@interface AppDelegate ()
+@interface AppDelegate () <NSMenuDelegate>
 
 @end
 
@@ -89,6 +89,14 @@ extern bool convertToolDontAlertWhenCompleted;
     NSMenuItem* mnuVietnameseLocaleCP1258;
     
     NSMenuItem* mnuQuickConvert;
+
+    // Secure Input warning (shown at the top of the menu when typing is blocked).
+    NSMenuItem* mnuSecureInputWarning;
+    NSMenuItem* mnuSecureInputSeparator;
+    NSString* _lastSecureInputSignature;
+
+    // Small red dot overlaid on the menu-bar icon while Secure Input blocks typing.
+    NSView* secureInputBadge;
 }
 
 -(void)askPermission {
@@ -206,7 +214,16 @@ extern bool convertToolDontAlertWhenCompleted;
     
     theMenu = [[NSMenu alloc] initWithTitle:@""];
     [theMenu setAutoenablesItems:NO];
-    
+    theMenu.delegate = self;
+
+    // Secure Input warning, kept at the very top and hidden until the issue occurs.
+    mnuSecureInputWarning = [theMenu addItemWithTitle:@"" action:@selector(onSecureInputWarning) keyEquivalent:@""];
+    mnuSecureInputWarning.target = self;
+    mnuSecureInputWarning.hidden = YES;
+    mnuSecureInputSeparator = [NSMenuItem separatorItem];
+    mnuSecureInputSeparator.hidden = YES;
+    [theMenu addItem:mnuSecureInputSeparator];
+
     menuInputMethod = [theMenu addItemWithTitle:@"Bật Tiếng Việt"
                                                      action:@selector(onInputMethodSelected)
                                               keyEquivalent:@""];
@@ -525,6 +542,114 @@ extern bool convertToolDontAlertWhenCompleted;
 
     [_aboutWC.window makeKeyAndOrderFront:nil];
     [_aboutWC.window setLevel:NSFloatingWindowLevel];
+}
+
+#pragma mark -Secure Input warning
+
+// Refresh right before the user sees the menu, so the warning is never stale.
+-(void)menuWillOpen:(NSMenu *)menu {
+    [self refreshSecureInputWarning];
+}
+
+-(void)refreshSecureInputWarning {
+    BOOL enabled = [OpenKeyManager isSecureInputEnabled];
+    NSString* holder = enabled ? [OpenKeyManager secureInputHolderName] : nil;
+
+    // Skip UI work unless the state actually changed (this runs every 5s).
+    NSString* signature = enabled ? (holder.length ? holder : @"?") : @"";
+    if ([signature isEqualToString:(_lastSecureInputSignature ?: @"")])
+        return;
+    _lastSecureInputSignature = signature;
+
+    if (!enabled) {
+        statusItem.button.toolTip = nil;
+        mnuSecureInputWarning.hidden = YES;
+        mnuSecureInputSeparator.hidden = YES;
+        [self setSecureInputBadgeVisible:NO];
+        return;
+    }
+
+    NSString* full = [self secureInputWarningMessage:holder];
+    statusItem.button.toolTip = full;
+    mnuSecureInputWarning.title = [self secureInputWarningTitle:holder];
+    mnuSecureInputWarning.toolTip = full;
+    mnuSecureInputWarning.hidden = NO;
+    mnuSecureInputSeparator.hidden = NO;
+    [self setSecureInputBadgeVisible:YES];
+}
+
+// Overlay a small red dot on the top-right of the menu-bar icon while Secure
+// Input is blocking typing. It's a subview (not baked into the image) so the
+// base icon keeps its light/dark adaptive rendering and survives icon swaps.
+-(void)setSecureInputBadgeVisible:(BOOL)visible {
+    NSStatusBarButton* button = statusItem.button;
+    if (button == nil)
+        return;
+
+    if (!visible) {
+        secureInputBadge.hidden = YES;
+        return;
+    }
+
+    if (secureInputBadge == nil) {
+        secureInputBadge = [[NSView alloc] initWithFrame:NSZeroRect];
+        secureInputBadge.wantsLayer = YES;
+        secureInputBadge.layer.backgroundColor = [NSColor systemRedColor].CGColor;
+        secureInputBadge.layer.borderColor = [NSColor whiteColor].CGColor;
+        secureInputBadge.layer.borderWidth = 1.0;
+        secureInputBadge.autoresizingMask = NSViewMinXMargin | NSViewMinYMargin;
+    }
+    if (secureInputBadge.superview != button)
+        [button addSubview:secureInputBadge];
+
+    CGFloat dot = 7.0;
+    NSRect b = button.bounds;
+    secureInputBadge.frame = NSMakeRect(NSMaxX(b) - dot, NSMaxY(b) - dot, dot, dot);
+    secureInputBadge.layer.cornerRadius = dot / 2.0;
+    secureInputBadge.hidden = NO;
+}
+
+// Single-line menu title. Language follows the currently selected input language.
+-(NSString*)secureInputWarningTitle:(NSString*)holder {
+    BOOL vn = (vLanguage == 1);
+    if (holder.length == 0) {
+        return vn ? @"⚠️ Không gõ được tiếng Việt — một ứng dụng đang giữ Secure Input"
+                  : @"⚠️ Can't type Vietnamese — an app is holding Secure Input";
+    }
+    return vn ? [NSString stringWithFormat:@"⚠️ Không gõ được tiếng Việt — \"%@\" đang giữ Secure Input", holder]
+              : [NSString stringWithFormat:@"⚠️ Can't type Vietnamese — \"%@\" is holding Secure Input", holder];
+}
+
+// Full explanation + fix (used for the tooltip and the click-through alert).
+-(NSString*)secureInputWarningMessage:(NSString*)holder {
+    BOOL vn = (vLanguage == 1);
+    NSString* app = holder.length ? holder : (vn ? @"một ứng dụng khác" : @"another app");
+    if (vn) {
+        return [NSString stringWithFormat:
+                @"Chế độ \"Secure Input\" của macOS đang bật, bị giữ bởi \"%@\".\n"
+                @"Khi bật, macOS chặn mọi ứng dụng đọc bàn phím, nên OpenKey không thể gõ tiếng Việt "
+                @"(dù biểu tượng trên thanh menu đã chuyển sang tiếng Việt).\n\n"
+                @"Cách khắc phục: Đăng xuất khỏi macOS rồi đăng nhập lại. "
+                @"(Hoặc thoát hẳn \"%@\" cũng được.)", app, app];
+    }
+    return [NSString stringWithFormat:
+            @"macOS \"Secure Input\" is ON, held by \"%@\".\n"
+            @"While it's on, macOS blocks every app from reading the keyboard, so OpenKey can't type "
+            @"Vietnamese (even though the menu-bar icon already switched).\n\n"
+            @"How to fix: Log out of macOS and log back in. "
+            @"(Or fully quit \"%@\".)", app, app];
+}
+
+-(void)onSecureInputWarning {
+    BOOL vn = (vLanguage == 1);
+    NSString* holder = [OpenKeyManager secureInputHolderName];
+    NSAlert* alert = [[NSAlert alloc] init];
+    [alert setMessageText:(vn ? @"Không gõ được tiếng Việt" : @"Can't type Vietnamese")];
+    [alert setInformativeText:[self secureInputWarningMessage:holder]];
+    [alert addButtonWithTitle:@"OK"];
+    [alert.window makeKeyAndOrderFront:nil];
+    [alert.window setLevel:NSStatusWindowLevel];
+    [alert runModal];
 }
 
 #pragma mark -Short key event

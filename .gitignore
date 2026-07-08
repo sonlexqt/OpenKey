@@ -13,3 +13,6 @@
 /build/
 .DS_Store
 *.xcuserstate
+
+# Auto-generated per build by Scripts/generate_buildinfo.sh
+/Sources/OpenKey/macOS/ModernKey/BuildInfo.h

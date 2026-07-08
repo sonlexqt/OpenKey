@@ -31,5 +31,10 @@
 -(void)setQuickConvertString;
 
 -(void)showIconOnDock:(BOOL)val;
+
+// Re-evaluates macOS Secure Input state and shows/hides the warning (menu-bar
+// tooltip + menu item) telling the user typing is blocked and which app is to
+// blame. Safe to call repeatedly; only touches the UI when the state changes.
+-(void)refreshSecureInputWarning;
 @end
 

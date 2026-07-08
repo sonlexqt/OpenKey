@@ -87,6 +87,44 @@ $ brew upgrade --cask openkey
 OpenKey cần cấp quyền, vào *System Preferences -> Security & Privacy -> Accessibility*, kích hoạt `OpenKey.app`. **Không tắt nó khi đang dùng OpenKey**.
 ![Guide](https://raw.githubusercontent.com/tuyenvm/tuyenvm.github.io/master/images/openkey-guide.png "Accessibility").
 
+## Dev notes - Build & cài đặt từ mã nguồn (macOS)
+
+Ghi chú cá nhân cho việc build/cài lại một bản mới (dễ quên):
+
+**1. Xóa cache quyền Accessibility (sau mỗi lần rebuild).**
+Vì bản build là ad-hoc signed, hash của binary đổi mỗi lần build nên macOS không giữ lại quyền cũ. Reset để tránh tình trạng quyền "cũ" bị kẹt:
+```
+tccutil reset Accessibility com.tuyenmai.openkey.fix
+```
+
+**2. Build một bản Release (universal, ad-hoc signed).**
+Chạy trong `Sources/OpenKey/macOS`:
+```
+xcodebuild -project OpenKey.xcodeproj -scheme OpenKey -configuration Release \
+  -derivedDataPath build/DerivedData \
+  CODE_SIGN_IDENTITY="-" CODE_SIGN_STYLE=Manual \
+  CODE_SIGNING_REQUIRED=NO CODE_SIGNING_ALLOWED=YES \
+  DEVELOPMENT_TEAM="" PROVISIONING_PROFILE_SPECIFIER="" build
+```
+App xuất ra tại: `build/DerivedData/Build/Products/Release/OpenKeyFix.app`.
+(Đổi `Release` -> `Debug` nếu muốn bản debug; đường dẫn output cũng đổi theo, xem bước 3.)
+
+**3. Đóng gói `.app` thành zip (để chia sẻ / backup).**
+```
+ditto -c -k --keepParent \
+  "build/DerivedData/Build/Products/Debug/OpenKeyFix.app" \
+  ~/Desktop/OpenKeyFix.zip
+```
+
+**4. Cài đặt bản mới.**
+- Thoát instance đang chạy (icon "V" trên menu bar -> Thoát), nếu không bản cũ sẽ chặn bản mới khởi động (single-instance).
+- Kéo `OpenKeyFix.app` vào `/Applications` (chọn **Replace**).
+- Cấp lại quyền Accessibility: *System Settings -> Privacy & Security -> Accessibility* — xóa entry cũ rồi thêm/bật lại bản mới (hoặc chạy lệnh `tccutil` ở bước 1 rồi bật lại).
+- Mở app từ `/Applications`.
+
+**5. Về Secure Input (khi không gõ được tiếng Việt dù icon đã chuyển).**
+Nếu một app đang giữ macOS "Secure Input" (vd 1Password khi mở ô nhập mật khẩu, hoặc Terminal bật *Secure Keyboard Entry*), CGEventTap của OpenKey bị chặn nên không gõ được tiếng Việt. OpenKey sẽ hiện chấm đỏ trên icon + tooltip/menu cảnh báo kèm tên app đang giữ. Cách khắc phục: đăng xuất rồi đăng nhập lại macOS, hoặc thoát hẳn app đang giữ Secure Input.
+
 ## Tác giả
 - Mai Vũ Tuyên.
 - Mọi góp ý, gửi cho mình qua maivutuyen.91@gmail.com  
